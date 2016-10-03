@@ -48,8 +48,8 @@ module.exports = function(config) {
       {pattern: '{src,testing}/**/*.js', included: false, watched: true},
 
       // Paths for debugging with source maps in dev tools
-      {pattern: '{src,testing}/**/*.ts', included: false, watched: false},
-      {pattern: '{src,testing}/**/*.js.map', included: false, watched: false},
+      {pattern: '{src,testing}/**/*.ts', included: false, watched: false, nocache: true},
+      {pattern: '{src,testing}/**/*.js.map', included: false, watched: false, nocache: true},
     ],
     reporters: ['progress', 'kjhtml', 'html'],
 

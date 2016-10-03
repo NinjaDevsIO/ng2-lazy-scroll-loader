@@ -47,6 +47,20 @@ export class LazyScrollLoaderService {
     this.pool.delete(el);
   }
 
+  public checkElements(): Promise<void[]> {
+    const progress: Promise<void>[] = [];
+
+    this.pool.forEach((path, el) => {
+      if (!el.nativeElement || !this.isElementInViewport(el.nativeElement)) {
+        return;
+      }
+
+      progress.push(this.bootstrapComponent(el, path));
+    });
+
+    return Promise.all(progress);
+  }
+
   private subscribe(): void {
     const scroll$ = Observable.fromEvent<any>(window, 'scroll');
     const resize$ = Observable.fromEvent<any>(window, 'resize');
@@ -63,30 +77,20 @@ export class LazyScrollLoaderService {
     combined$.subscribe(() => this.checkElements());
   }
 
-  private checkElements(): void {
-    this.pool.forEach((path, el) => {
-      if (!el.nativeElement || !this.isElementInViewport(el.nativeElement)) {
-        return;
-      }
-
-      this.bootstrapComponent(el, path);
-    });
+  private bootstrapComponent(el: ElementRef, path: string): Promise<void> {
+    return this.loader.load(path)
+      .then(moduleFactory => {
+        this.bootstrapWithCustomSelector(el, moduleFactory);
+      })
+      .then(() => {
+        this.deregisterElement(el);
+      });
   }
 
-  public bootstrapComponent(el: ElementRef, path: string): void {
-    this.loader.load(path)
-    .then(moduleFactory => {
-      this.bootstrapWithCustomSelector(el, moduleFactory);
-    })
-    .then(() => {
-      this.deregisterElement(el);
-    });
-  }
-
-  public bootstrapWithCustomSelector(el: ElementRef,
+  private bootstrapWithCustomSelector(el: ElementRef,
     moduleFactory: NgModuleFactory<any>
-  ): void {
-    this.zone.run(() => {
+  ): Promise<void> {
+    return this.zone.run(() => {
       // Get the parent injector and create the module
       const parentInjector = ReflectiveInjector
         .resolveAndCreate([], this.injector);
@@ -94,13 +98,14 @@ export class LazyScrollLoaderService {
 
       // Some dependencies from this module
       const initStatus = ngModule.injector.get(ApplicationInitStatus);
-      const component = ngModule.injector.get(ComponentToken);
+      const component = ngModule.injector.get(ComponentToken, null);
 
       if (!component) {
-        // TODO throw
+        throw new Error(`Missing ComponentToken in lazy-loaded module.
+          Check the LazyScrollLoader docs.`);
       }
 
-      initStatus.donePromise.then(() => {
+      return initStatus.donePromise.then(() => {
         const elementId = this.generateRandomId();
         (el.nativeElement as HTMLElement).setAttribute('id', elementId);
 

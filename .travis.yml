@@ -1,8 +1,18 @@
+dist: trusty
+sudo: required
 language: node_js
-sudo: false
 
 node_js:
-  - "4.4.0"
+  - "6.5.0"
+
+env:
+  global:
+    - CHROME_BIN=chromium-browser
+    - DISPLAY=:99.0
+    - CHROME_BIN=chromium-browser
+
+before_script:
+  - sh -e /etc/init.d/xvfb start
 
 os:
   - linux
@@ -13,3 +23,4 @@ install:
 script:
   - npm run lint
   - npm run tsc
+  - npm run test-once

@@ -1,6 +1,8 @@
 .DS_Store
 node_modules
+testing
 **/*npm-debug.log.*
 *.ts
+_test-output
 
 !*.d.ts
